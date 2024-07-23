@@ -1,94 +1,127 @@
-""" Module to get data from a directory and convert it to a python dataset."""
+#include "data_loader.h"
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <stdexcept>
+#include <filesystem>
+#include <torch/torch.h>
 
-import os
-import torch
-from torch.utils.data import Dataset
+// Helper function to process file content
+std::vector<float> DataLoader::organize_content(const std::string &content)
+{
+    std::vector<float> flattened_list;
+    std::istringstream stream(content);
+    std::string line;
+    while (std::getline(stream, line))
+    {
+        if (!line.empty())
+        {
+            std::istringstream line_stream(line);
+            float value;
+            while (line_stream >> value)
+            {
+                flattened_list.push_back(round(value));
+            }
+        }
+    }
+    return flattened_list;
+}
 
+// Load contents from files
+std::vector<std::vector<float>> DataLoader::load_file_contents(const std::vector<std::string> &file_paths)
+{
+    std::vector<std::vector<float>> file_contents;
+    for (const auto &file_path : file_paths)
+    {
+        std::ifstream file(file_path);
+        if (!file.is_open())
+        {
+            throw std::runtime_error("Unable to open file: " + file_path);
+        }
+        std::string content;
+        std::string line;
+        int line_count = 0;
+        while (std::getline(file, line) && line_count < 10)
+        {
+            if (line_count >= 2)
+            {
+                content += line + "\n";
+            }
+            ++line_count;
+        }
+        file_contents.push_back(organize_content(content));
+    }
+    return file_contents;
+}
 
-class TrainingDataLoader(Dataset):
-    """Allows a training dataset to be created from a directory of files."""
+// TrainingDataLoader implementation
+TrainingDataLoader::TrainingDataLoader(const std::string &training_data_directory, int training_number_of_files)
+{
+    std::vector<std::string> file_paths;
+    for (const auto &entry : std::filesystem::directory_iterator(training_data_directory))
+    {
+        file_paths.push_back(entry.path().string());
+    }
+    std::sort(file_paths.begin(), file_paths.end());
+    file_paths.resize(training_number_of_files);
+    file_contents = load_file_contents(file_paths);
+}
 
-    def __init__(self, training_data_directory, training_number_of_files):
-        """Initializes a Dataset by loading files from a directory."""
-#The sorted file paths limited to the number specified.
-        file_paths = [
-            os.path.join(training_data_directory, file_name)
-            for file_name in sorted(os.listdir(training_data_directory))
-        ][:training_number_of_files]
-        self.file_contents = self.load_file_contents(file_paths)
+size_t TrainingDataLoader::size() const
+{
+    return file_contents.size();
+}
 
-    def __len__(self):
-        """Returns the dataset's length."""
-        return len(self.file_contents)
+torch::Tensor TrainingDataLoader::operator[](size_t index) const
+{
+    if (index >= file_contents.size())
+    {
+        throw std::out_of_range("Index out of range");
+    }
+    return torch::tensor(file_contents[index]);
+}
 
-    def __getitem__(self, index):
-        """Return as a tensor."""
-        return torch.tensor(self.file_contents[index])
+// TestingDataLoader implementation
+TestingDataLoader::TestingDataLoader(const std::string &testing_data_directory, int testing_number_of_files)
+{
+    std::vector<std::string> file_names;
+    for (const auto &entry : std::filesystem::directory_iterator(testing_data_directory))
+    {
+        file_names.push_back(entry.path().string());
+    }
+    std::sort(file_names.begin(), file_names.end());
+    file_names.resize(testing_number_of_files);
+    file_paths = file_names;
+}
 
-    def load_file_contents(self, file_paths):
-        """Loads file contents."""
-        file_contents = []
-        for file_path in file_paths:
-            with open(file_path, "r") as file:
-                lines = file.readlines()[2:10]
-                content = "".join(lines)
-                organized_content = self.organize_content(content)
-                file_contents.append(organized_content)
-        return file_contents
+size_t TestingDataLoader::size() const
+{
+    return file_paths.size();
+}
 
-    def organize_content(self, content):
-        """Organize the dataset."""
-        lines = content.split("\n")
-        organized_lines = [
-            list(map(round, map(float, line.split())))
-            for line in lines
-            if line.strip()
-        ]
-        return [val for sublist in organized_lines for val in sublist]
-
-
-class TestingDataLoader(Dataset):
-    """Allows a testing dataset to be created from a directory of files."""
-
-    def __init__(self, testing_data_directory, testing_number_of_files):
-        """To fill."""
-#The sorted file paths limited to the number specified.
-        file_names = sorted(os.listdir(testing_data_directory))[
-            :testing_number_of_files
-        ]
-        self.file_paths = [
-            os.path.join(testing_data_directory, file_name)
-            for file_name in file_names
-        ]
-
-    def __len__(self):
-        """Return the dataset's length."""
-        return len(self.file_paths)
-
-    def __getitem__(self, index):
-        """Return file contents as a tensor."""
-        file_path = self.file_paths[index]
-        file_contents = self.load_file_contents(file_path)
-        return torch.tensor(file_contents, dtype=torch.float32)
-
-    def load_file_contents(self, file_path):
-        """Loads file contents."""
-        with open(file_path, "r") as file:
-            lines = file.readlines()[2:10]
-            content = "".join(lines)
-            formatted_content = self.organize_content(content)
-        return formatted_content
-
-    def organize_content(self, content):
-        """Organize the dataset."""
-        lines = content.split("\n")
-        organized_lines = [
-            list(map(round, map(float, line.split())))
-            for line in lines
-            if line.strip()
-        ]
-        flattened_list = [
-            val for sublist in organized_lines for val in sublist
-        ]
-        reshaped_array = torch.tensor(flattened_list).reshape(-1, 1)
-        return reshaped_array
+torch::Tensor TestingDataLoader::operator[](size_t index) const
+{
+    if (index >= file_paths.size())
+    {
+        throw std::out_of_range("Index out of range");
+    }
+    std::ifstream file(file_paths[index]);
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Unable to open file: " + file_paths[index]);
+    }
+    std::string content;
+    std::string line;
+    int line_count = 0;
+    while (std::getline(file, line) && line_count < 10)
+    {
+        if (line_count >= 2)
+        {
+            content += line + "\n";
+        }
+        ++line_count;
+    }
+    auto flattened_list = organize_content(content);
+    auto tensor = torch::tensor(flattened_list, torch::kFloat32).view({-1, 1});
+    return tensor;
+}
