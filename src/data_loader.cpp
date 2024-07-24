@@ -8,6 +8,40 @@
 #include <filesystem>
 #include <torch/torch.h>
 #include <torch/script.h>
+#include <string>
+#include <iostream>
+#include <vector>
+
+class Dataset : public torch::data::datasets::Dataset<Dataset>
+{
+public:
+    // Constructor to initialize the dataset with file paths or other parameters
+    Dataset(const std::string &file_path)
+    {
+        // Load data from file or other sources
+        std::ifstream file(file_path);
+        std::string line;
+        while (std::getline(file, line))
+        {
+            data_.push_back(std::stof(line));
+        }
+    }
+
+    // Override the get method to return a single data sample
+    torch::data::Example<> get(size_t index) override
+    {
+        return {torch::tensor(data_[index]), torch::tensor(labels_[index])};
+    }
+
+    // Override the size method to return the size of the dataset
+    torch::optional<size_t> size() const override
+    {
+        return data_.size();
+    }
+
+    std::vector<float> data_;
+    std::vector<float> labels_;
+};
 
 // Allows a training dataset to be created from a directory of files.
 // Initializes a Dataset by loading files from a directory.

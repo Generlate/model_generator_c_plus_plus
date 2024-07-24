@@ -12,7 +12,6 @@ public:
     // Forward pass
     torch::Tensor forward(const torch::Tensor &x);
 
-private:
     // Layers
     torch::nn::Linear hidden1{nullptr};
     torch::nn::Linear hidden2{nullptr};
