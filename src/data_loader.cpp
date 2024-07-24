@@ -57,12 +57,22 @@ TrainingDataLoader::TrainingDataLoader(const std::string &training_data_director
     std::sort(file_paths.begin(), file_paths.end());
     file_paths.resize(training_number_of_files);
     file_contents = load_file_contents(file_paths);
+
+    void len();
+    // Returns the dataset's length.
+    void getitem();
+    // Return as a tensor.
+    void load_file_contents();
+    // Loads file contents.
+    void organize_content();
+    // Organize the dataset.
 }
 
 // Loads file contents.
 // TestingDataLoader implementation
 TestingDataLoader::TestingDataLoader(const std::string &testing_data_directory, int testing_number_of_files)
 {
+    // Allows a testing dataset to be created from a directory of files.
     std::vector<std::string> file_names;
     for (const auto &entry : std::filesystem::directory_iterator(testing_data_directory))
     {
@@ -71,6 +81,15 @@ TestingDataLoader::TestingDataLoader(const std::string &testing_data_directory, 
     std::sort(file_names.begin(), file_names.end());
     file_names.resize(testing_number_of_files);
     file_paths = file_names;
+
+    void len();
+    // Return the dataset's length.
+    void getitem();
+    // Return file contents as a tensor.
+    void load_file_contents();
+    // Loads file contents.
+    void organize_content();
+    // Organize the dataset.
 }
 
 // Allows a testing dataset to be created from a directory of files.
