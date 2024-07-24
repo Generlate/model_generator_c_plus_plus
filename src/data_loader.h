@@ -5,21 +5,6 @@
 #include <vector>
 #include <torch/torch.h>
 
-// DataLoader base class for shared functionality
-class DataLoader
-{
-protected:
-    std::vector<std::vector<float>> file_contents;
-
-    std::vector<float> organize_content(const std::string &content);
-
-public:
-    virtual size_t size() const = 0;
-    virtual torch::Tensor operator[](size_t index) const = 0;
-
-    static std::vector<std::vector<float>> load_file_contents(const std::vector<std::string> &file_paths);
-};
-
 // TrainingDataLoader for training datasets
 class TrainingDataLoader : public DataLoader
 {
