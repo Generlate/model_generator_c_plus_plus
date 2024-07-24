@@ -1,5 +1,7 @@
 /** Takes in tensors and returns new tensors. */
 
+#include <torch/torch.h>
+#include <torch/script.h>
 #include "neural_network.h"
 
 // Calls Pytorch functions to process a tensor through a neural network.

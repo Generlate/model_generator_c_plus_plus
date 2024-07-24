@@ -1,11 +1,13 @@
 /** Runs a formatted dataset through a neural network, formats the output to be viewed as a 3d object and file name. */
 
 #include <torch/torch.h>
+#include <torch/script.h>
 #include <iostream>
 #include <fstream>
 #include <filesystem>
 #include "neural_network.h"
 #include "data_formatter.h"
+#include "main.h"
 
 namespace fs = std::filesystem;
 

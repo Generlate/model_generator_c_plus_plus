@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <filesystem>
 #include <torch/torch.h>
+#include <torch/script.h>
 
 // Helper function to process file content
 std::vector<float> DataLoader::organize_content(const std::string &content)
