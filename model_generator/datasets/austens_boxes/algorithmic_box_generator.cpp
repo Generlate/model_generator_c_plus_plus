@@ -4,7 +4,7 @@
 #include <cstdlib> // For rand() and srand()
 #include <ctime>   // For time()
 
-const std::vector<std::vector<int>> VERTICES = {
+const int VERTICES[8][3] = {
     {-1, -1, -1}, // Vertex 0
     {1, -1, -1},  // Vertex 1
     {1, 1, -1},   // Vertex 2
@@ -15,7 +15,7 @@ const std::vector<std::vector<int>> VERTICES = {
     {-1, 1, 1}    // Vertex 7
 };
 
-const std::vector<std::vector<int>> FACES = {
+const int FACES[6][4] = {
     {0, 1, 2, 3}, // Face 0
     {1, 5, 6, 2}, // Face 1
     {5, 4, 7, 6}, // Face 2
@@ -30,19 +30,19 @@ void generate_box(int width, int height, int depth, const std::string &filename)
     if (file.is_open())
     {
         file << "OFF\n";
-        file << VERTICES.size() << " " << FACES.size() << " 0\n";
+        file << 8 << " " << 6 << " 0\n";
 
-        for (const auto &vertex : VERTICES)
+        for (int i = 0; i < 8; ++i)
         {
-            file << vertex[0] * width << " " << vertex[1] * height << " " << vertex[2] * depth << "\n";
+            file << VERTICES[i][0] * width << " " << VERTICES[i][1] * height << " " << VERTICES[i][2] * depth << "\n";
         }
 
-        for (const auto &face : FACES)
+        for (int i = 0; i < 6; ++i)
         {
-            file << face.size() << " ";
-            for (const auto &vertex_index : face)
+            file << 4 << " ";
+            for (int j = 0; j < 4; ++j)
             {
-                file << vertex_index << " ";
+                file << FACES[i][j] << " ";
             }
             file << "\n";
         }
