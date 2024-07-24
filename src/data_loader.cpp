@@ -1,3 +1,5 @@
+/** Module to get data from a directory and convert it to a python dataset. */
+
 #include "data_loader.h"
 #include <fstream>
 #include <sstream>
@@ -54,6 +56,9 @@ std::vector<std::vector<float>> DataLoader::load_file_contents(const std::vector
     return file_contents;
 }
 
+// Allows a training dataset to be created from a directory of files.
+// Initializes a Dataset by loading files from a directory.
+// The sorted file paths limited to the number specified.
 // TrainingDataLoader implementation
 TrainingDataLoader::TrainingDataLoader(const std::string &training_data_directory, int training_number_of_files)
 {
@@ -67,11 +72,13 @@ TrainingDataLoader::TrainingDataLoader(const std::string &training_data_director
     file_contents = load_file_contents(file_paths);
 }
 
+// Returns the dataset's length.
 size_t TrainingDataLoader::size() const
 {
     return file_contents.size();
 }
 
+// Return as a tensor.
 torch::Tensor TrainingDataLoader::operator[](size_t index) const
 {
     if (index >= file_contents.size())
@@ -81,6 +88,7 @@ torch::Tensor TrainingDataLoader::operator[](size_t index) const
     return torch::tensor(file_contents[index]);
 }
 
+// Loads file contents.
 // TestingDataLoader implementation
 TestingDataLoader::TestingDataLoader(const std::string &testing_data_directory, int testing_number_of_files)
 {
@@ -94,11 +102,18 @@ TestingDataLoader::TestingDataLoader(const std::string &testing_data_directory, 
     file_paths = file_names;
 }
 
+// Organize the dataset.
 size_t TestingDataLoader::size() const
 {
     return file_paths.size();
 }
 
+// Allows a testing dataset to be created from a directory of files.
+// To fill.
+// Return the dataset's length.
+// Return file contents as a tensor.
+// Loads file contents.
+// Organize the dataset.
 torch::Tensor TestingDataLoader::operator[](size_t index) const
 {
     if (index >= file_paths.size())

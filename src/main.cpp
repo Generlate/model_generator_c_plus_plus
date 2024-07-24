@@ -1,3 +1,5 @@
+/** Runs a formatted dataset through a neural network, formats the output to be viewed as a 3d object and file name. */
+
 #include <torch/torch.h>
 #include <iostream>
 #include <fstream>
@@ -19,12 +21,13 @@ int main()
     auto criterion = torch::nn::MSELoss();
     auto optimizer = torch::optim::SGD(model.parameters(), torch::optim::SGDOptions(0.01));
 
-    // Set number of epochs
+    // Set number of epochs. I found three to give the lowest loss score.
     const int number_of_epochs = 3;
 
     // The training loop
     for (int epoch = 0; epoch < number_of_epochs; ++epoch)
     {
+        // Get the next testing data tensor.
         // Generate box coordinates
         auto output = model.forward(TRAINING_COMBINED_TENSOR);
 

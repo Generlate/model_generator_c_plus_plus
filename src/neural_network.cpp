@@ -1,5 +1,8 @@
+/** Takes in tensors and returns new tensors. */
+
 #include "neural_network.h"
 
+// Calls Pytorch functions to process a tensor through a neural network.
 // Constructor definition
 NeuralNetwork::NeuralNetwork()
     : hidden1(register_module("hidden1", torch::nn::Linear(60, 80))),
@@ -10,6 +13,9 @@ NeuralNetwork::NeuralNetwork()
     // Constructor does not need to do anything else
 }
 
+// Initializes a Neural network with three hidden layers.
+
+// Applies a relu activation function.
 // Forward pass definition
 torch::Tensor NeuralNetwork::forward(const torch::Tensor &x)
 {

@@ -12,13 +12,16 @@ include_directories(include)
 file(GLOB SOURCES "src/*.cpp")
 
 # Create the executable
-add_executable(my_project ${SOURCES})
+add_executable(model_generator ${SOURCES})
 
 # Define asset and data directories
 add_compile_definitions(ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
 
+# Find and include LibTorch
+find_package(Torch REQUIRED)
+
 # Link third-party libraries (if any)
-# target_link_libraries(my_project ${THIRD_PARTY_LIBRARIES})
+target_link_libraries(model_generator "${TORCH_LIBRARIES}")
 
 # Add tests
 enable_testing()
