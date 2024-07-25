@@ -1,7 +1,7 @@
 /** Runs a formatted dataset through a neural network, formats the output to be viewed as a 3d object and file name. */
 
-// #include <torch/torch.h>
-// #include <torch/script.h>
+#include <torch/torch.h>
+#include <torch/script.h>
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -103,15 +103,31 @@
 //   return 0;
 //}
 
-int main()
+int main(int argc, char *argv[])
 {
-    Person person("John Doe");
+    if (argc < 2)
+    {
+        std::cerr << "Usage: " << argv[0] << " <name>" << std::endl;
+        return 1;
+    }
+
+    std::string name = argv[1];
+
+    TrainingDataLoader person(name);
 
     // Print using member function
     person.printName();
 
     // Print using getter (optional)
-    std::cout << "Name: " << person.getName() << std::endl;
+    std::cout << "File generated successfully. Saved as: " << person.getName() << std::endl;
+
+    TestingDataLoader person2(name);
+
+    // Print using member function
+    person2.printName2();
+
+    // Print using getter (optional)
+    std::cout << "File generated successfully. Saved as: " << person2.getName2() << std::endl;
 
     return 0;
 }

@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <stdexcept>
 #include <filesystem>
-// #include <torch/torch.h>
-// #include <torch/script.h>
+#include <torch/torch.h>
+#include <torch/script.h>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -19,16 +19,16 @@
 // TrainingDataLoader::TrainingDataLoader(const std::string &training_data_directory, int training_number_of_files)
 //{
 
-Person::Person(const std::string &name) : name_(name) {}
+TrainingDataLoader::TrainingDataLoader(const std::string &Dataset) : dataset_(Dataset) {}
 
-void Person::printName() const
+void TrainingDataLoader::printName() const
 {
-    std::cout << "Name: " << name_ << std::endl;
+    std::cout << "Name: " << dataset_ << std::endl;
 }
 
-std::string Person::getName() const
+std::string TrainingDataLoader::getName() const
 {
-    return name_;
+    return dataset_;
 }
 //    std::vector<std::string> file_paths;
 //    for (const auto &entry : std::filesystem::directory_iterator(training_data_directory))
@@ -79,3 +79,15 @@ std::string Person::getName() const
 // Return file contents as a tensor.
 // Loads file contents.
 // Organize the dataset.
+
+TestingDataLoader::TestingDataLoader(const std::string &Dataset) : dataset_(Dataset) {}
+
+void TestingDataLoader::printName2() const
+{
+    std::cout << "Name: " << dataset_ << std::endl;
+}
+
+std::string TestingDataLoader::getName2() const
+{
+    return dataset_;
+}

@@ -5,14 +5,14 @@
 
 #include <string>
 #include <vector>
-// #include <torch/torch.h>
+#include <torch/torch.h>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <algorithm>
 #include <stdexcept>
 #include <filesystem>
-// #include <torch/script.h>
+#include <torch/script.h>
 
 // TrainingDataLoader for training datasets
 // Allows a training dataset to be created from a directory of files.
@@ -63,15 +63,26 @@
 // Organize the dataset.
 // };
 
-class Person
+class TrainingDataLoader
 {
 public:
-    Person(const std::string &name);
+    TrainingDataLoader(const std::string &Dataset);
     void printName() const;
     std::string getName() const; // Optional getter
 
 private:
-    std::string name_;
+    std::string dataset_;
+};
+
+class TestingDataLoader
+{
+public:
+    TestingDataLoader(const std::string &Dataset);
+    void printName2() const;
+    std::string getName2() const; // Optional getter
+
+private:
+    std::string dataset_;
 };
 
 #endif // DATA_LOADER_H
