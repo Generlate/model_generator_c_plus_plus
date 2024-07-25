@@ -103,31 +103,17 @@
 //   return 0;
 //}
 
-int main(int argc, char *argv[])
+int main()
 {
-    if (argc < 2)
+    DataLoader loader("/path/to/your/off/files");
+    std::vector<MeshData> dataset = loader.loadDataset();
+
+    for (const auto &meshData : dataset)
     {
-        std::cerr << "Usage: " << argv[0] << " <name>" << std::endl;
-        return 1;
+        torch::Tensor tensorData = meshDataToTensor(meshData);
+        std::cout << "Tensor Data: " << tensorData << std::endl;
+        // Use tensorData with PyTorch
     }
-
-    std::string name = argv[1];
-
-    TrainingDataLoader person(name);
-
-    // Print using member function
-    person.printName();
-
-    // Print using getter (optional)
-    std::cout << "File generated successfully. Saved as: " << person.getName() << std::endl;
-
-    TestingDataLoader person2(name);
-
-    // Print using member function
-    person2.printName2();
-
-    // Print using getter (optional)
-    std::cout << "File generated successfully. Saved as: " << person2.getName2() << std::endl;
 
     return 0;
 }
