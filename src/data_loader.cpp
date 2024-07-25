@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <stdexcept>
 #include <filesystem>
-#include <torch/torch.h>
-#include <torch/script.h>
+// #include <torch/torch.h>
+// #include <torch/script.h>
 #include <string>
 #include <iostream>
 #include <vector>
