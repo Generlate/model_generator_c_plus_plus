@@ -7,7 +7,7 @@
 #include <filesystem>
 // #include "neural_network.h"
 // #include "data_formatter.h"
-#include "data_loader.h"
+// #include "data_loader.h"
 
 // namespace fs = std::filesystem;
 
@@ -103,17 +103,138 @@
 //   return 0;
 //}
 
+namespace fs = std::filesystem;
+
+// Function to read a single .off file
+bool readOffFile(const std::string &filename, std::vector<torch::Tensor> &vertices, std::vector<torch::Tensor> &faces)
+{
+    std::ifstream file(filename);
+    if (!file.is_open())
+    {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return false;
+    }
+
+    std::string line;
+    std::getline(file, line); // Read the OFF header
+    if (line != "OFF")
+    {
+        std::cerr << "Invalid OFF file: " << filename << std::endl;
+        return false;
+    }
+
+    size_t numVertices, numFaces, numEdges;
+    file >> numVertices >> numFaces >> numEdges;
+
+    std::vector<std::vector<float>> vertexList(numVertices, std::vector<float>(3));
+    std::vector<std::vector<int>> faceList(numFaces);
+
+    for (size_t i = 0; i < numVertices; ++i)
+    {
+        file >> vertexList[i][0] >> vertexList[i][1] >> vertexList[i][2];
+    }
+
+    for (size_t i = 0; i < numFaces; ++i)
+    {
+        size_t numFaceVertices;
+        file >> numFaceVertices;
+        faceList[i].resize(numFaceVertices);
+        for (size_t j = 0; j < numFaceVertices; ++j)
+        {
+            file >> faceList[i][j];
+        }
+    }
+
+    // Convert to torch::Tensor
+    std::vector<float> vertexData;
+    for (const auto &v : vertexList)
+    {
+        vertexData.insert(vertexData.end(), v.begin(), v.end());
+    }
+    torch::Tensor vertexTensor = torch::from_blob(vertexData.data(), {static_cast<long>(numVertices), 3}, torch::kFloat32).clone();
+    vertices.push_back(vertexTensor);
+
+    std::vector<int64_t> faceData;
+    for (const auto &f : faceList)
+    {
+        faceData.push_back(f.size());
+        faceData.insert(faceData.end(), f.begin(), f.end());
+    }
+    torch::Tensor faceTensor = torch::from_blob(faceData.data(), {static_cast<long>(numFaces), static_cast<long>(*max_element(faceData.begin(), faceData.end()))}, torch::kInt64).clone();
+    faces.push_back(faceTensor);
+
+    return true;
+}
+
+// Function to load all .off files in a directory
+void loadDatasetFromDirectory(const std::string &directory, std::vector<torch::Tensor> &vertices, std::vector<torch::Tensor> &faces)
+{
+    for (const auto &entry : fs::directory_iterator(directory))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".off")
+        {
+            std::string filePath = entry.path().string();
+            if (!readOffFile(filePath, vertices, faces))
+            {
+                std::cerr << "Failed to load file: " << filePath << std::endl;
+            }
+        }
+    }
+}
+
+void printTensor(const torch::Tensor &tensor, const std::string &name)
+{
+    std::cout << name << " Tensor:" << std::endl;
+    auto accessor = tensor.accessor<float, 2>(); // Adjust for your tensor's type and dimensions
+    for (int64_t i = 0; i < tensor.size(0); ++i)
+    {
+        for (int64_t j = 0; j < tensor.size(1); ++j)
+        {
+            std::cout << accessor[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void printDataset(const std::vector<torch::Tensor> &vertices, const std::vector<torch::Tensor> &faces)
+{
+    std::cout << "Number of vertex tensors: " << vertices.size() << std::endl;
+    for (size_t i = 0; i < vertices.size(); ++i)
+    {
+        std::cout << "Vertex Tensor " << i << ":" << std::endl;
+        printTensor(vertices[i], "Vertex");
+    }
+
+    std::cout << "Number of face tensors: " << faces.size() << std::endl;
+    for (size_t i = 0; i < faces.size(); ++i)
+    {
+        std::cout << "Face Tensor " << i << ":" << std::endl;
+        // Note: Use appropriate accessor type for face tensors
+        auto accessor = faces[i].accessor<int64_t, 2>();
+        for (int64_t r = 0; r < faces[i].size(0); ++r)
+        {
+            for (int64_t c = 0; c < faces[i].size(1); ++c)
+            {
+                std::cout << accessor[r][c] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+}
+
 int main()
 {
-    DataLoader loader("/path/to/your/off/files");
-    std::vector<MeshData> dataset = loader.loadDataset();
+    std::string directory = "../assets/datasets/austens_boxes/training";
+    std::vector<torch::Tensor> vertices;
+    std::vector<torch::Tensor> faces;
 
-    for (const auto &meshData : dataset)
-    {
-        torch::Tensor tensorData = meshDataToTensor(meshData);
-        std::cout << "Tensor Data: " << tensorData << std::endl;
-        // Use tensorData with PyTorch
-    }
+    loadDatasetFromDirectory(directory, vertices, faces);
+
+    // Example: Print loaded data
+    std::cout << "Loaded " << vertices.size() << " vertex tensors." << std::endl;
+    std::cout << "Loaded " << faces.size() << " face tensors." << std::endl;
+
+    printDataset(vertices, faces);
 
     return 0;
 }
