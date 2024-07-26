@@ -105,7 +105,6 @@
 
 namespace fs = std::filesystem;
 
-// Function to read a single .off file
 bool readOffFile(const std::string &filename, std::vector<torch::Tensor> &vertices, std::vector<torch::Tensor> &faces)
 {
     std::ifstream file(filename);
@@ -134,11 +133,13 @@ bool readOffFile(const std::string &filename, std::vector<torch::Tensor> &vertic
         file >> vertexList[i][0] >> vertexList[i][1] >> vertexList[i][2];
     }
 
+    size_t maxFaceVertices = 0;
     for (size_t i = 0; i < numFaces; ++i)
     {
         size_t numFaceVertices;
         file >> numFaceVertices;
         faceList[i].resize(numFaceVertices);
+        maxFaceVertices = std::max(maxFaceVertices, numFaceVertices);
         for (size_t j = 0; j < numFaceVertices; ++j)
         {
             file >> faceList[i][j];
@@ -160,7 +161,9 @@ bool readOffFile(const std::string &filename, std::vector<torch::Tensor> &vertic
         faceData.push_back(f.size());
         faceData.insert(faceData.end(), f.begin(), f.end());
     }
-    torch::Tensor faceTensor = torch::from_blob(faceData.data(), {static_cast<long>(numFaces), static_cast<long>(*max_element(faceData.begin(), faceData.end()))}, torch::kInt64).clone();
+
+    // Ensure face tensor has the right dimensions
+    torch::Tensor faceTensor = torch::from_blob(faceData.data(), {static_cast<long>(numFaces), static_cast<long>(maxFaceVertices)}, torch::kInt64).clone();
     faces.push_back(faceTensor);
 
     return true;
@@ -182,59 +185,70 @@ void loadDatasetFromDirectory(const std::string &directory, std::vector<torch::T
     }
 }
 
+// Print tensor utility function
 void printTensor(const torch::Tensor &tensor, const std::string &name)
 {
-    std::cout << name << " Tensor:" << std::endl;
-    auto accessor = tensor.accessor<float, 2>(); // Adjust for your tensor's type and dimensions
-    for (int64_t i = 0; i < tensor.size(0); ++i)
+    if (tensor.scalar_type() == torch::kFloat32)
     {
-        for (int64_t j = 0; j < tensor.size(1); ++j)
+        auto accessor = tensor.accessor<float, 2>(); // Adjust for your tensor's type and dimensions
+        for (int64_t i = 0; i < tensor.size(0); ++i)
         {
-            std::cout << accessor[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
-void printDataset(const std::vector<torch::Tensor> &vertices, const std::vector<torch::Tensor> &faces)
-{
-    std::cout << "Number of vertex tensors: " << vertices.size() << std::endl;
-    for (size_t i = 0; i < vertices.size(); ++i)
-    {
-        std::cout << "Vertex Tensor " << i << ":" << std::endl;
-        printTensor(vertices[i], "Vertex");
-    }
-
-    std::cout << "Number of face tensors: " << faces.size() << std::endl;
-    for (size_t i = 0; i < faces.size(); ++i)
-    {
-        std::cout << "Face Tensor " << i << ":" << std::endl;
-        // Note: Use appropriate accessor type for face tensors
-        auto accessor = faces[i].accessor<int64_t, 2>();
-        for (int64_t r = 0; r < faces[i].size(0); ++r)
-        {
-            for (int64_t c = 0; c < faces[i].size(1); ++c)
+            for (int64_t j = 0; j < tensor.size(1); ++j)
             {
-                std::cout << accessor[r][c] << " ";
+                std::cout << accessor[i][j] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+    else if (tensor.scalar_type() == torch::kInt64)
+    {
+        auto accessor = tensor.accessor<int64_t, 2>(); // Adjust for your tensor's type and dimensions
+        for (int64_t i = 0; i < tensor.size(0); ++i)
+        {
+            for (int64_t j = 0; j < tensor.size(1); ++j)
+            {
+                std::cout << accessor[i][j] << " ";
             }
             std::cout << std::endl;
         }
     }
 }
 
+// Function to print the entire dataset
+void printDataset(const std::vector<torch::Tensor> &vertices, const std::vector<torch::Tensor> &faces, const std::string &datasetName)
+{
+    std::cout << datasetName << " Dataset:" << std::endl;
+    for (size_t i = 0; i < vertices.size(); ++i)
+    {
+        std::cout << "Vertex Tensor " << i << ":" << std::endl;
+        printTensor(vertices[i], "Vertex");
+    }
+
+    for (size_t i = 0; i < faces.size(); ++i)
+    {
+        std::cout << "Face Tensor " << i << ":" << std::endl;
+        printTensor(faces[i], "Face");
+    }
+}
+
 int main()
 {
-    std::string directory = "../assets/datasets/austens_boxes/training";
-    std::vector<torch::Tensor> vertices;
-    std::vector<torch::Tensor> faces;
+    std::string training_directory = "../assets/datasets/austens_boxes/training";
+    std::string testing_directory = "../assets/datasets/austens_boxes/testing";
 
-    loadDatasetFromDirectory(directory, vertices, faces);
+    std::vector<torch::Tensor> training_vertices;
+    std::vector<torch::Tensor> training_faces;
+    std::vector<torch::Tensor> testing_vertices;
+    std::vector<torch::Tensor> testing_faces;
 
-    // Example: Print loaded data
-    std::cout << "Loaded " << vertices.size() << " vertex tensors." << std::endl;
-    std::cout << "Loaded " << faces.size() << " face tensors." << std::endl;
+    loadDatasetFromDirectory(training_directory, training_vertices, training_faces);
+    loadDatasetFromDirectory(testing_directory, testing_vertices, testing_faces);
 
-    printDataset(vertices, faces);
+    // Print the training dataset
+    printDataset(training_vertices, training_faces, "Training");
+
+    // Print the testing dataset
+    printDataset(testing_vertices, testing_faces, "Testing");
 
     return 0;
 }
