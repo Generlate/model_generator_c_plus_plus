@@ -9,100 +9,6 @@
 // #include "data_formatter.h"
 // #include "data_loader.h"
 
-// namespace fs = std::filesystem;
-
-// int main()
-// {
-// Load datasets
-// load_datasets();
-
-// Create an instance of the neural network
-//     NeuralNetwork model;
-
-// Define the loss function and OPTIMIZER
-//    auto CRITERION = torch::nn::MSELoss();
-//   auto OPTIMIZER = torch::optim::SGD(model.parameters(), torch::optim::SGDOptions(0.01));
-
-// Set number of epochs. I found three to give the lowest loss score.
-//    const int NUMBER_OF_EPOCHS = 3;
-
-// The training loop
-//    for (int EPOCH = 0; EPOCH < NUMBER_OF_EPOCHS; ++EPOCH)
-//   {
-// Get the next testing data tensor.
-// Generate box coordinates
-//      auto output = model.forward(TRAINING_COMBINED_TENSOR);
-
-// Compare the generated coordinates against the test coordinates
-//        auto loss = CRITERION(output, TESTING_COMBINED_TENSOR);
-
-// Print the loss every EPOCH
-//        std::cout << "Epoch: " << EPOCH + 1 << ", Loss: " << loss.item<double>() << std::endl;
-
-// Backward pass and optimize
-//        OPTIMIZER.zero_grad();
-//        loss.backward();
-//       OPTIMIZER.step();
-//    }
-
-// List the generated coordinates
-//    auto output = model.forward(TRAINING_COMBINED_TENSOR);
-//    auto array = output.detach().cpu().flatten();
-
-// Format to .off
-//    std::string FORMATTED_ARRAY = "OFF\n8 6 0\n";
-//    for (size_t i = 0; i < array.size(0); ++i)
-//    {
-//        FORMATTED_ARRAY += std::to_string(array[i].item<float>() * 22) + " ";
-//        if ((i + 1) % 3 == 0)
-//        {
-//            FORMATTED_ARRAY += "\n";
-//        }
-//    }
-
-//    std::string ADDITIONAL_STRING = R"(
-// 4 0 1 2 3
-// 4 1 5 6 2
-// 4 5 4 7 6
-// 4 4 0 3 7
-// 4 3 2 6 7
-// 4 4 5 1 0)";
-
-//    FORMATTED_ARRAY += ADDITIONAL_STRING;
-
-//    std::string file_path = "./generated_boxes/generated_box.off";
-
-// Check if the file already exists
-//    if (fs::exists(file_path))
-//    {
-// Find the next available file name by incrementing a counter
-//       int FILE_COUNTER = 1;
-//        std::string incremented_file_path;
-//        do
-//        {
-//            incremented_file_path = file_path.substr(0, file_path.find_last_of('.')) + "_" + std::to_string(FILE_COUNTER) + ".off";
-//            ++FILE_COUNTER;
-//        } while (fs::exists(incremented_file_path));
-
-//        file_path = incremented_file_path;
-//    }
-
-// Save the .off file
-//    std::ofstream FILE(file_path);
-//    if (FILE.is_open())
-//    {
-//        FILE << FORMATTED_ARRAY;
-//        FILE.close();
-//        std::cout << "File generated successfully. Saved as: " << file_path << std::endl;
-//    }
-//    else
-//    {
-//        std::cerr << "Unable to open file " << file_path << std::endl;
-//    }
-
-//   return 0;
-//}
-
 namespace fs = std::filesystem;
 
 // Extract numeric part from filename for sorting
@@ -240,7 +146,7 @@ torch::Tensor combineTensors(const std::vector<std::pair<std::string, torch::Ten
 } */
 
 // Function to create the training number lists
-std::vector<torch::Tensor> createTrainingNumberLists(const torch::Tensor &trainingTensors)
+/* std::vector<torch::Tensor> createTrainingNumberLists(const torch::Tensor &trainingTensors)
 {
     std::vector<torch::Tensor> training_number_lists;
 
@@ -260,16 +166,19 @@ std::vector<torch::Tensor> createTrainingNumberLists(const torch::Tensor &traini
     }
 
     return training_number_lists;
-}
+} */
 
 // Define the neural network structure
 struct NeuralNetwork : torch::nn::Module
 {
     torch::nn::Linear hidden1{nullptr}, hidden2{nullptr}, hidden3{nullptr}, output{nullptr};
 
-    NeuralNetwork(int64_t input_size)
+    NeuralNetwork()
     {
-        hidden1 = register_module("hidden1", torch::nn::Linear(input_size, 80));
+        //      fc1 = register_module("fc1", torch::nn::Linear(90, 80));
+        //         fc2 = register_module("fc2", torch::nn::Linear(80, 1));
+
+        hidden1 = register_module("hidden1", torch::nn::Linear(90, 80));
         hidden2 = register_module("hidden2", torch::nn::Linear(80, 80));
         hidden3 = register_module("hidden3", torch::nn::Linear(80, 80));
         output = register_module("output", torch::nn::Linear(80, 1));
@@ -277,11 +186,25 @@ struct NeuralNetwork : torch::nn::Module
 
     torch::Tensor forward(torch::Tensor x)
     {
-        x = torch::relu(hidden1->forward(x)); // First hidden layer with ReLU
-        x = torch::relu(hidden2->forward(x)); // Second hidden layer with ReLU
-        x = torch::relu(hidden3->forward(x)); // Third hidden layer with ReLU
-        x = output->forward(x);               // Output layer
+        x = torch::relu(hidden1->forward(x));
+        x = torch::relu(hidden2->forward(x));
+        x = torch::relu(hidden3->forward(x));
+        x = output->forward(x);
         return x;
+    }
+
+    // Implement the save method
+    void save(torch::serialize::OutputArchive &archive) const override
+    {
+        torch::nn::Module::save(archive); // Call the parent class's save method
+        // Add any custom saving logic here, if needed
+    }
+
+    // Implement the load method
+    void load(torch::serialize::InputArchive &archive) override
+    {
+        torch::nn::Module::load(archive); // Call the parent class's load method
+        // Add any custom loading logic here, if needed
     }
 };
 
@@ -319,8 +242,66 @@ std::string formatToOFF(const std::vector<float> &array)
     return vertex_section;
 }
 
+// Function to save the .off file
+void saveOffFile(std::string filePath, const std::string &formattedArray)
+{
+    // Check if the file already exists
+    if (std::filesystem::exists(filePath))
+    {
+        // Find the next available file name by incrementing a counter
+        int fileCounter = 1;
+        std::string fileName, fileExtension, incrementedFilePath;
+
+        // Split the file path into name and extension
+        auto pos = filePath.find_last_of('.');
+        if (pos != std::string::npos)
+        {
+            fileName = filePath.substr(0, pos);
+            fileExtension = filePath.substr(pos);
+        }
+        else
+        {
+            fileName = filePath;
+            fileExtension = "";
+        }
+
+        // Find the next available file name
+        do
+        {
+            incrementedFilePath = fileName + "_" + std::to_string(fileCounter) + fileExtension;
+            fileCounter++;
+        } while (std::filesystem::exists(incrementedFilePath));
+
+        filePath = incrementedFilePath;
+    }
+
+    // Open the file in write mode
+    std::ofstream file(filePath);
+
+    // Check if the file is open
+    if (file.is_open())
+    {
+        // Write the formatted array to the file
+        file << formattedArray;
+
+        // Close the file
+        file.close();
+
+        // Print success message
+        std::cout << "File generated successfully. Saved as: " << filePath << std::endl;
+    }
+    else
+    {
+        // Print error message if the file could not be opened
+        std::cerr << "Error: Could not open the file for writing." << std::endl;
+    }
+}
+
 int main()
 {
+    // Create a neural network model
+    NeuralNetwork model;
+    model.to(torch::kCPU);
 
     std::string training_directory = "../assets/datasets/austens_boxes/training";
     std::string testing_directory = "../assets/datasets/austens_boxes/testing";
@@ -349,54 +330,53 @@ int main()
     // Print the shape of trainingTensors
     // std::cout << "Shape of trainingTensors: " << trainingTensors.sizes() << std::endl;
 
-    std::vector<torch::Tensor> training_number_lists = createTrainingNumberLists(trainingTensors);
+    // std::vector<torch::Tensor> training_number_lists = createTrainingNumberLists(trainingTensors);
     // std::cout << "Training Number Lists" << training_number_lists << std::endl;
 
     // Set random seed for reproducibility
     torch::manual_seed(1);
 
     // Create model with the appropriate input size
-    int64_t input_size = transposed_training_tensor.size(1); // Assuming trainingTensors is 2D
-    NeuralNetwork model(input_size);
+    int64_t number_of_features = transposed_training_tensor.size(1); // Assuming trainingTensors is 2D
 
     // Define the loss function and optimizer.
     auto CRITERION = torch::nn::MSELoss();
-    auto OPTIMIZER = torch::optim::SGD(model.parameters(), torch::optim::SGDOptions(0.01));
+    torch::optim::Adam optimizer(model.parameters(), torch::optim::AdamOptions(0.01));
 
     // Set number of epochs. I found three to give the lowest loss score.
     const int NUMBER_OF_EPOCHS = 3;
-    // TESTING_DATA_ITERATOR = iter(TESTING_INPUT)
-
-    std::string file_path = "./generated_boxes/generated_box.off";
 
     // Use trainingTensors as input to the model
     auto TRAINING_INPUT = transposed_training_tensor;
     auto TESTING_INPUT = transposed_testing_tensor;
+    auto TRAINING_TARGET = transposed_training_tensor;
 
-    // The training loop
-    for (int EPOCH = 0; EPOCH < NUMBER_OF_EPOCHS; ++EPOCH)
+    for (int epoch = 0; epoch < NUMBER_OF_EPOCHS; ++epoch)
     {
+        model.train();
+
+        optimizer.zero_grad();
+
         auto output = model.forward(TRAINING_INPUT);
 
-        // Compute the loss for each of the 10 targets and average the results
-        torch::Tensor total_loss = torch::zeros({});
-        for (int i = 0; i < TESTING_INPUT.size(1); ++i)
-        {
-            auto target = TESTING_INPUT.narrow(1, i, 1); // Select column i from TESTING_INPUT
-            auto loss = CRITERION(output, target);
-            total_loss += loss;
-        }
-        total_loss /= TESTING_INPUT.size(1);
+        torch::Tensor target = TRAINING_TARGET.select(1, epoch % TRAINING_TARGET.size(1)).view({-1, 1});
 
-        std::cout << "Epoch: " << EPOCH + 1 << ", Loss: " << total_loss.item<double>() << std::endl;
+        auto loss = CRITERION(output, target);
 
-        OPTIMIZER.zero_grad();
-        total_loss.backward();
-        OPTIMIZER.step();
+        loss.backward();
+        optimizer.step();
+
+        std::cout << "Epoch [" << epoch + 1 << "/" << NUMBER_OF_EPOCHS << "], Loss: " << loss.item<float>() << std::endl;
     }
 
     // List the generated coordinates
     auto output = model.forward(TRAINING_INPUT);
+
+    auto net = std::make_shared<NeuralNetwork>();
+
+    // Save the model
+    std::string model_save_path = "../assets/generated_boxes/model.pt";
+    torch::save(net, model_save_path);
 
     // Print the output tensor
     // std::cout << "Output Tensor:" << std::endl;
@@ -408,12 +388,14 @@ int main()
     // std::cout << output_array << std::endl;
 
     std::string output_formatted = formatToOFF(output_array);
-    std::cout << output_formatted << std::endl;
+    // std::cout << output_formatted << std::endl;
 
-    // FORMATTED_ARRAY += ADDITIONAL_STRING;
+    std::string file_path = "../assets/generated_boxes/generated_box.off";
 
-    // std::cout << "File generated successfully. Saved as:" << file_path << std::endl;
-    // std::cout << trainingTensors << std::endl;
+    saveOffFile(file_path, output_formatted);
 
     return 0;
 }
+
+// todo: fix generation paths to generate .off file in same directory as the executable
+// todo: add more variety to generations.
