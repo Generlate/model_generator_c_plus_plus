@@ -117,10 +117,10 @@ struct NeuralNetwork : torch::nn::Module
 
     NeuralNetwork(int64_t inputSize)
     {
-        hidden1 = register_module("hidden1", torch::nn::Linear(inputSize, 80));
-        hidden2 = register_module("hidden2", torch::nn::Linear(80, 80));
-        hidden3 = register_module("hidden3", torch::nn::Linear(80, 80));
-        output = register_module("output", torch::nn::Linear(80, 1));
+        hidden1 = register_module("hidden1", torch::nn::Linear(inputSize, 8));
+        hidden2 = register_module("hidden2", torch::nn::Linear(8, 8));
+        hidden3 = register_module("hidden3", torch::nn::Linear(8, 8));
+        output = register_module("output", torch::nn::Linear(8, 1));
     }
 
     torch::Tensor forward(torch::Tensor x)
@@ -189,7 +189,7 @@ void saveOffFile(std::string filePath, const std::string &formattedArray)
         std::string fileName, fileExtension, incrementedFilePath;
 
         // Split the file path into name and extension
-        auto pos = filePath.find_last_of('.');
+        std::string::size_type pos = filePath.find_last_of('.');
         if (pos != std::string::npos)
         {
             fileName = filePath.substr(0, pos);
@@ -235,18 +235,18 @@ void saveOffFile(std::string filePath, const std::string &formattedArray)
 
 int main()
 {
-    std::string training_directory = "../datasets/austens_boxes/training";
-    std::string testing_directory = "../datasets/austens_boxes/testing";
+    std::string training_directory = "../assets/datasets/austens_boxes/training";
+    std::string target_directory = "../assets/datasets/austens_boxes/target";
 
     std::vector<std::pair<std::string, torch::Tensor>> training_vertices;
-    std::vector<std::pair<std::string, torch::Tensor>> testing_vertices;
+    std::vector<std::pair<std::string, torch::Tensor>> target_vertices;
 
     loadDatasetFromDirectory(training_directory, training_vertices);
-    loadDatasetFromDirectory(testing_directory, testing_vertices);
+    loadDatasetFromDirectory(target_directory, target_vertices);
 
     // Create tensor of tensors
     torch::Tensor trainingTensors = combineTensors(training_vertices);
-    torch::Tensor testingTensors = combineTensors(testing_vertices);
+    torch::Tensor targetTensors = combineTensors(target_vertices);
     int64_t inputSize = training_vertices.size();
 
     // Create a neural network model
@@ -258,14 +258,15 @@ int main()
     // std::cout << trainingTensors << std::endl;
     torch::Tensor transposed_training_tensor = trainingTensors.transpose(0, 1);
     // std::cout << transposed_training_tensor << std::endl;
-    torch::Tensor transposed_testing_tensor = testingTensors.transpose(0, 1);
-    // std::cout << transposed_testing_tensor << std::endl;
+    torch::Tensor transposed_target_tensor = targetTensors.transpose(0, 1);
+    // std::cout << transposed_target_tensor << std::endl;
 
     // Print the shape of trainingTensors
     // std::cout << "Shape of trainingTensors: " << trainingTensors.sizes() << std::endl;
 
     // Set random seed for reproducibility
     torch::manual_seed(1);
+    // todo: check if this needs to be played with.
 
     // Create model with the appropriate input size
     int64_t number_of_features = transposed_training_tensor.size(1);
@@ -275,12 +276,12 @@ int main()
     torch::optim::Adam optimizer(model.parameters(), torch::optim::AdamOptions(0.01));
 
     // Set number of epochs. I found three to give the lowest loss score.
-    const int NUMBER_OF_EPOCHS = 3;
+    const int NUMBER_OF_EPOCHS = 2;
+    const int NOISE = 200;
 
     // Use trainingTensors as input to the model
-    torch::Tensor TRAINING_INPUT = transposed_training_tensor;
-    torch::Tensor TESTING_INPUT = transposed_testing_tensor;
-    torch::Tensor TRAINING_TARGET = transposed_training_tensor;
+    torch::Tensor TRAINING_INPUT = transposed_training_tensor * NOISE;
+    torch::Tensor TRAINING_TARGET = transposed_target_tensor.mean(1, /*keepdim=*/true); // Shape: {24, 1}
 
     for (int epoch = 0; epoch < NUMBER_OF_EPOCHS; ++epoch)
     {
@@ -290,12 +291,13 @@ int main()
 
         torch::Tensor output = model.forward(TRAINING_INPUT);
 
-        torch::Tensor target = TRAINING_TARGET.select(1, epoch % TRAINING_TARGET.size(1)).view({-1, 1});
+        // torch::Tensor target = TRAINING_TARGET.select(1, epoch % TRAINING_TARGET.size(1)).view({-1, 1});
+        torch::Tensor target = TRAINING_TARGET;
 
-        auto loss = CRITERION(output, target);
+        torch::Tensor loss = CRITERION(output, target);
 
-        // loss.backward();
-        // optimizer.step();
+        loss.backward();
+        optimizer.step();
 
         std::cout << "Epoch [" << epoch + 1 << "/" << NUMBER_OF_EPOCHS << "], Loss: " << loss.item<float>() << std::endl;
     }
@@ -303,11 +305,13 @@ int main()
     // List the generated coordinates
     torch::Tensor output = model.forward(TRAINING_INPUT);
 
-    auto net = std::make_shared<NeuralNetwork>(inputSize);
+    std::shared_ptr net = std::make_shared<NeuralNetwork>(inputSize);
+    // std::cout << net << std::endl;
 
     // Save the model
-    std::string model_save_path = "./model.pt";
+    std::string model_save_path = "../assets/generated_boxes/model.pt";
     torch::save(net, model_save_path);
+    // todo: check if the net should be changed to model
 
     // List the generated coordinates.
     torch::Tensor detached_output = output.detach().cpu();
@@ -317,7 +321,7 @@ int main()
     std::string output_formatted = formatToOFF(output_array);
     // std::cout << output_formatted << std::endl;
 
-    std::string file_path = "./generated_box.off";
+    std::string file_path = "../assets/generated_boxes/generated_box.off";
 
     saveOffFile(file_path, output_formatted);
 
