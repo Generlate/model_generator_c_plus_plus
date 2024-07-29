@@ -16,10 +16,6 @@ file(GLOB SOURCES "${CMAKE_SOURCE_DIR}/src/*.cpp")
 # Create the executable
 add_executable(model_generator ${SOURCES})
 
-# Set the output directory for the executable
-set_target_properties(model_generator PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/assets/generated_boxes"
-)
 
 # Define asset and data directories
 #add_compile_definitions(ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
