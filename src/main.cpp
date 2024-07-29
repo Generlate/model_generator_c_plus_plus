@@ -110,75 +110,14 @@ torch::Tensor combineTensors(const std::vector<std::pair<std::string, torch::Ten
     return result;
 }
 
-// Print tensor utility function
-/* void printTensor(const torch::Tensor &tensor)
-{
-    if (tensor.scalar_type() == torch::kFloat32)
-    {
-        auto accessor = tensor.accessor<float, 2>(); // Adjust for the tensor's dimensions
-        for (int64_t i = 0; i < tensor.size(0); ++i)
-        {
-            std::cout << "[";
-            for (int64_t j = 0; j < tensor.size(1); ++j)
-            {
-                std::cout << accessor[i][j];
-                if (j < tensor.size(1) - 1)
-                    std::cout << ", "; // Add a comma between values
-            }
-            std::cout << "]";
-            if (i < tensor.size(0) - 1)
-                std::cout << ", "; // Add a comma between rows
-            std::cout << std::endl;
-        }
-    }
-} */
-
-// Function to print the entire dataset
-/* void printDataset(const std::vector<std::pair<std::string, torch::Tensor>> &vertices, const std::string &datasetName)
-{
-    std::cout << "Dataset: " << datasetName << std::endl;
-    for (const auto &entry : vertices)
-    {
-        std::cout << "File: " << entry.first << std::endl;
-        printTensor(entry.second);
-        std::cout << std::endl;
-    }
-} */
-
-// Function to create the training number lists
-/* std::vector<torch::Tensor> createTrainingNumberLists(const torch::Tensor &trainingTensors)
-{
-    std::vector<torch::Tensor> training_number_lists;
-
-    for (int index = 0; index < 24; ++index)
-    {
-        std::vector<float> values;
-
-        for (int i = 0; i < trainingTensors.size(0); ++i)
-        {
-            if (index < trainingTensors.size(1))
-            {
-                values.push_back(trainingTensors[i][index].item<float>());
-            }
-        }
-
-        training_number_lists.push_back(torch::tensor(values));
-    }
-
-    return training_number_lists;
-} */
-
 // Define the neural network structure
 struct NeuralNetwork : torch::nn::Module
 {
     torch::nn::Linear hidden1{nullptr}, hidden2{nullptr}, hidden3{nullptr}, output{nullptr};
 
-    NeuralNetwork()
+    NeuralNetwork(int64_t inputSize)
     {
-        //      fc1 = register_module("fc1", torch::nn::Linear(90, 80));
-        //         fc2 = register_module("fc2", torch::nn::Linear(80, 1));
-
-        hidden1 = register_module("hidden1", torch::nn::Linear(90, 80));
+        hidden1 = register_module("hidden1", torch::nn::Linear(inputSize, 80));
         hidden2 = register_module("hidden2", torch::nn::Linear(80, 80));
         hidden3 = register_module("hidden3", torch::nn::Linear(80, 80));
         output = register_module("output", torch::nn::Linear(80, 1));
@@ -196,15 +135,13 @@ struct NeuralNetwork : torch::nn::Module
     // Implement the save method
     void save(torch::serialize::OutputArchive &archive) const override
     {
-        torch::nn::Module::save(archive); // Call the parent class's save method
-        // Add any custom saving logic here, if needed
+        torch::nn::Module::save(archive);
     }
 
     // Implement the load method
     void load(torch::serialize::InputArchive &archive) override
     {
-        torch::nn::Module::load(archive); // Call the parent class's load method
-        // Add any custom loading logic here, if needed
+        torch::nn::Module::load(archive);
     }
 };
 
@@ -229,7 +166,6 @@ std::string formatToOFF(const std::vector<float> &array)
         vertex_section.pop_back();
     }
 
-    // Adding the additional string
     std::string additional_string = R"(
 4 0 1 2 3
 4 1 5 6 2
@@ -299,12 +235,8 @@ void saveOffFile(std::string filePath, const std::string &formattedArray)
 
 int main()
 {
-    // Create a neural network model
-    NeuralNetwork model;
-    model.to(torch::kCPU);
-
-    std::string training_directory = "../assets/datasets/austens_boxes/training";
-    std::string testing_directory = "../assets/datasets/austens_boxes/testing";
+    std::string training_directory = "../datasets/austens_boxes/training";
+    std::string testing_directory = "../datasets/austens_boxes/testing";
 
     std::vector<std::pair<std::string, torch::Tensor>> training_vertices;
     std::vector<std::pair<std::string, torch::Tensor>> testing_vertices;
@@ -315,29 +247,28 @@ int main()
     // Create tensor of tensors
     torch::Tensor trainingTensors = combineTensors(training_vertices);
     torch::Tensor testingTensors = combineTensors(testing_vertices);
+    int64_t inputSize = training_vertices.size();
+
+    // Create a neural network model
+    NeuralNetwork model(inputSize);
+    model.to(torch::kCPU);
 
     // Print the tensor of tensors
     // std::cout << training_vertices << std::endl;
     // std::cout << trainingTensors << std::endl;
-    auto transposed_training_tensor = trainingTensors.transpose(0, 1);
+    torch::Tensor transposed_training_tensor = trainingTensors.transpose(0, 1);
     // std::cout << transposed_training_tensor << std::endl;
-    auto transposed_testing_tensor = testingTensors.transpose(0, 1);
+    torch::Tensor transposed_testing_tensor = testingTensors.transpose(0, 1);
     // std::cout << transposed_testing_tensor << std::endl;
-
-    // std::cout << "Testing Tensors:" << std::endl;
-    // printTensor(testingTensors);
 
     // Print the shape of trainingTensors
     // std::cout << "Shape of trainingTensors: " << trainingTensors.sizes() << std::endl;
-
-    // std::vector<torch::Tensor> training_number_lists = createTrainingNumberLists(trainingTensors);
-    // std::cout << "Training Number Lists" << training_number_lists << std::endl;
 
     // Set random seed for reproducibility
     torch::manual_seed(1);
 
     // Create model with the appropriate input size
-    int64_t number_of_features = transposed_training_tensor.size(1); // Assuming trainingTensors is 2D
+    int64_t number_of_features = transposed_training_tensor.size(1);
 
     // Define the loss function and optimizer.
     auto CRITERION = torch::nn::MSELoss();
@@ -347,9 +278,9 @@ int main()
     const int NUMBER_OF_EPOCHS = 3;
 
     // Use trainingTensors as input to the model
-    auto TRAINING_INPUT = transposed_training_tensor;
-    auto TESTING_INPUT = transposed_testing_tensor;
-    auto TRAINING_TARGET = transposed_training_tensor;
+    torch::Tensor TRAINING_INPUT = transposed_training_tensor;
+    torch::Tensor TESTING_INPUT = transposed_testing_tensor;
+    torch::Tensor TRAINING_TARGET = transposed_training_tensor;
 
     for (int epoch = 0; epoch < NUMBER_OF_EPOCHS; ++epoch)
     {
@@ -357,30 +288,26 @@ int main()
 
         optimizer.zero_grad();
 
-        auto output = model.forward(TRAINING_INPUT);
+        torch::Tensor output = model.forward(TRAINING_INPUT);
 
         torch::Tensor target = TRAINING_TARGET.select(1, epoch % TRAINING_TARGET.size(1)).view({-1, 1});
 
         auto loss = CRITERION(output, target);
 
-        loss.backward();
-        optimizer.step();
+        // loss.backward();
+        // optimizer.step();
 
         std::cout << "Epoch [" << epoch + 1 << "/" << NUMBER_OF_EPOCHS << "], Loss: " << loss.item<float>() << std::endl;
     }
 
     // List the generated coordinates
-    auto output = model.forward(TRAINING_INPUT);
+    torch::Tensor output = model.forward(TRAINING_INPUT);
 
-    auto net = std::make_shared<NeuralNetwork>();
+    auto net = std::make_shared<NeuralNetwork>(inputSize);
 
     // Save the model
-    std::string model_save_path = "../assets/generated_boxes/model.pt";
+    std::string model_save_path = "./model.pt";
     torch::save(net, model_save_path);
-
-    // Print the output tensor
-    // std::cout << "Output Tensor:" << std::endl;
-    // std::cout << output << std::endl;
 
     // List the generated coordinates.
     torch::Tensor detached_output = output.detach().cpu();
@@ -390,12 +317,9 @@ int main()
     std::string output_formatted = formatToOFF(output_array);
     // std::cout << output_formatted << std::endl;
 
-    std::string file_path = "../assets/generated_boxes/generated_box.off";
+    std::string file_path = "./generated_box.off";
 
     saveOffFile(file_path, output_formatted);
 
     return 0;
 }
-
-// todo: fix generation paths to generate .off file in same directory as the executable
-// todo: add more variety to generations.
