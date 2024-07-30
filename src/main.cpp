@@ -293,3 +293,4 @@ int main()
 // todo: check what's assigned to a variable and what's just a function transform
 // todo: check main() to see if some variables and functions should be moved into other functions (for readability)
 // todo: check allcaps on variables
+// todo: compare to python project
