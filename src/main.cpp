@@ -65,6 +65,7 @@ bool readOffFile(const std::string &filename, std::vector<std::pair<std::string,
 
     return true;
 }
+// todo: review this function
 
 void loadOffFilesFromDirectory(const std::string &directory, std::vector<std::pair<std::string, torch::Tensor>> &vertices)
 {
@@ -108,7 +109,7 @@ struct NeuralNetwork : torch::nn::Module
 {
     torch::nn::Linear hidden1{nullptr}, hidden2{nullptr}, hidden3{nullptr}, output{nullptr};
 
-    NeuralNetwork(int64_t inputSize)
+    NeuralNetwork(int inputSize)
     {
         hidden1 = register_module("hidden1", torch::nn::Linear(inputSize, 8));
         hidden2 = register_module("hidden2", torch::nn::Linear(8, 8));
@@ -136,24 +137,24 @@ struct NeuralNetwork : torch::nn::Module
     }
 };
 
-std::string formatToOFF(const std::vector<float> &array)
+std::string formatToOFF(const torch::Tensor &tensor)
 {
+
     std::ostringstream formatted_array;
     formatted_array << "OFF\n8 6 0\n";
 
-    for (size_t i = 0; i < array.size(); ++i)
+    torch::Tensor flattened = tensor.view({-1});
+    auto data = flattened.accessor<float, 1>();
+
+    for (size_t i = 0; i < 8; ++i)
     {
-        formatted_array << array[i] << " ";
-        if ((i + 1) % 3 == 0)
-        {
-            formatted_array << "\n";
-        }
+        formatted_array << data[i * 3] << " " << data[i * 3 + 1] << " " << data[i * 3 + 2] << "\n";
     }
 
     std::string vertex_section = formatted_array.str();
     if (!vertex_section.empty() && vertex_section.back() == '\n')
     {
-        vertex_section.pop_back();
+        vertex_section.pop_back(); // Remove the trailing newline
     }
 
     std::string additional_string = R"(
@@ -175,7 +176,6 @@ void saveOffFile(std::string filePath, const std::string &formattedArray)
         int fileCounter = 1;
         std::string fileName, fileExtension, incrementedFilePath;
 
-        // Split the file path into name and extension
         std::string::size_type pos = filePath.find_last_of('.');
         if (pos != std::string::npos)
         {
@@ -188,7 +188,6 @@ void saveOffFile(std::string filePath, const std::string &formattedArray)
             fileExtension = "";
         }
 
-        // Find the next available file name
         do
         {
             incrementedFilePath = fileName + "_" + std::to_string(fileCounter) + fileExtension;
@@ -198,7 +197,6 @@ void saveOffFile(std::string filePath, const std::string &formattedArray)
         filePath = incrementedFilePath;
     }
 
-    // Open the file in write mode
     std::ofstream file(filePath);
 
     if (file.is_open())
@@ -215,6 +213,27 @@ void saveOffFile(std::string filePath, const std::string &formattedArray)
     }
 }
 
+void trainModel(NeuralNetwork &model,
+                torch::Tensor &TRAINING_INPUT,
+                torch::Tensor &TRAINING_TARGET)
+{
+    torch::optim::Adam optimizer(model.parameters(), torch::optim::AdamOptions(0.01));
+
+    torch::nn::MSELoss lossFunction;
+
+    const short NUMBER_OF_EPOCHS = 2;
+    for (short EPOCH = 0; EPOCH < NUMBER_OF_EPOCHS; ++EPOCH)
+    {
+        model.train();
+        optimizer.zero_grad();
+        torch::Tensor output = model.forward(TRAINING_INPUT);
+        torch::Tensor loss = lossFunction(output, TRAINING_TARGET);
+        loss.backward();
+        optimizer.step();
+        std::cout << "Epoch [" << EPOCH + 1 << "/" << NUMBER_OF_EPOCHS << "], Loss: " << loss.item<float>() << std::endl;
+    }
+}
+
 int main()
 {
     std::string training_directory = "../assets/datasets/austens_boxes/training";
@@ -228,7 +247,7 @@ int main()
 
     torch::Tensor trainingTensors = combineTensors(training_vertices);
     torch::Tensor targetTensors = combineTensors(target_vertices);
-    int64_t inputSize = training_vertices.size();
+    int inputSize = training_vertices.size();
 
     NeuralNetwork model(inputSize);
 
@@ -237,40 +256,40 @@ int main()
 
     torch::manual_seed(1);
 
-    auto loss_function = torch::nn::MSELoss();
-    torch::optim::Adam optimizer(model.parameters(), torch::optim::AdamOptions(0.01));
-
-    // I found two epochs to give the lowest loss score.
-    const int NUMBER_OF_EPOCHS = 2;
-    const int NOISE = 200;
+    const short NOISE = 200;
 
     torch::Tensor TRAINING_INPUT = transposed_training_tensor * NOISE;
     torch::Tensor TRAINING_TARGET = transposed_target_tensor.mean(1, /*keepdim=*/true);
 
-    for (int epoch = 0; epoch < NUMBER_OF_EPOCHS; ++epoch)
-    {
-        model.train();
-        optimizer.zero_grad();
-        torch::Tensor output = model.forward(TRAINING_INPUT);
-        torch::Tensor loss = loss_function(output, TRAINING_TARGET);
-        loss.backward();
-        optimizer.step();
-        std::cout << "Epoch [" << epoch + 1 << "/" << NUMBER_OF_EPOCHS << "], Loss: " << loss.item<float>() << std::endl;
-    }
+    trainModel(model, TRAINING_INPUT, TRAINING_TARGET);
 
-    torch::Tensor output = model.forward(TRAINING_INPUT);
+    torch::Tensor output = model.forward(TRAINING_INPUT).detach();
+    std::string output_formatted = formatToOFF(output);
+    std::string file_path = "../assets/generated_boxes/generated_box.off";
+    saveOffFile(file_path, output_formatted);
 
     std::shared_ptr<NeuralNetwork> net = std::make_shared<NeuralNetwork>(inputSize);
     std::string model_save_path = "./model.pt";
     torch::save(net, model_save_path);
     // todo: check if the net should be changed to model
 
-    torch::Tensor detached_output = output.detach().cpu();
-    std::vector<float> output_array(detached_output.data_ptr<float>(), detached_output.data_ptr<float>() + detached_output.numel());
-
-    std::string output_formatted = formatToOFF(output_array);
-    std::string file_path = "../assets/generated_boxes/generated_box.off";
-    saveOffFile(file_path, output_formatted);
-
     return 0;
 }
+
+// todo: change training_vertices to load with shape {1, 24} and correctly join to make trainingTensors (do it with targetTensors too)
+// todo: check whether training_vertices can be loaded as {24, 1} and trainingTensors {24, 90} to skip transposing them
+// todo: check if functions can be simplified
+// todo: make separate .cpp and .h files  to improve readability
+// todo: put .cpp in src/ and .h into include/
+// todo: use Doxygen
+// todo: check if i should do more or less error handling
+// todo compare to hazel
+// todo: update ReadMe
+// todo: delete reference/
+// todo: check line breaks
+// todo: make main.cpp the neural network definition, make a trainer file and make a cube generator file
+// todo: check with rider
+// todo: go through numeric types and check appropriateness
+// todo: check what's assigned to a variable and what's just a function transform
+// todo: check main() to see if some variables and functions should be moved into other functions (for readability)
+// todo: check allcaps on variables
