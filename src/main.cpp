@@ -250,25 +250,18 @@ int main()
     for (int epoch = 0; epoch < NUMBER_OF_EPOCHS; ++epoch)
     {
         model.train();
-
         optimizer.zero_grad();
-
         torch::Tensor output = model.forward(TRAINING_INPUT);
-
-        torch::Tensor target = TRAINING_TARGET;
-
-        torch::Tensor loss = loss_function(output, target);
-
+        torch::Tensor loss = loss_function(output, TRAINING_TARGET);
         loss.backward();
         optimizer.step();
-
         std::cout << "Epoch [" << epoch + 1 << "/" << NUMBER_OF_EPOCHS << "], Loss: " << loss.item<float>() << std::endl;
     }
 
     torch::Tensor output = model.forward(TRAINING_INPUT);
 
-    std::shared_ptr net = std::make_shared<NeuralNetwork>(inputSize);
-    std::string model_save_path = "../assets/generated_boxes/model.pt";
+    std::shared_ptr<NeuralNetwork> net = std::make_shared<NeuralNetwork>(inputSize);
+    std::string model_save_path = "./model.pt";
     torch::save(net, model_save_path);
     // todo: check if the net should be changed to model
 
@@ -276,9 +269,7 @@ int main()
     std::vector<float> output_array(detached_output.data_ptr<float>(), detached_output.data_ptr<float>() + detached_output.numel());
 
     std::string output_formatted = formatToOFF(output_array);
-
     std::string file_path = "../assets/generated_boxes/generated_box.off";
-
     saveOffFile(file_path, output_formatted);
 
     return 0;

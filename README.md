@@ -51,7 +51,7 @@ Example boxes are loaded from a directory, formatted into coordinate values, use
 ## Dependencies
 
 -   C++
--   LibTorch
+-   LibTorch 2.3.1
 -   CMake 3.28.3
 
 ## Features To Come
