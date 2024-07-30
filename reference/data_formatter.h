@@ -1,5 +1,4 @@
-#ifndef DATA_PROCESSOR_H
-#define DATA_PROCESSOR_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -12,5 +11,3 @@ class TestingDataLoader;
 // Function prototypes
 torch::Tensor format_training_data(const TrainingDataLoader &training_loader);
 torch::Tensor format_testing_data(const TestingDataLoader &testing_loader);
-
-#endif // DATA_PROCESSOR_H

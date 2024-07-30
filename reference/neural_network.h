@@ -1,5 +1,4 @@
-#ifndef NEURAL_NETWORK_H
-#define NEURAL_NETWORK_H
+#pragma once
 
 #include <torch/torch.h>
 
@@ -18,5 +17,3 @@ public:
     torch::nn::Linear hidden3{nullptr};
     torch::nn::Linear output{nullptr};
 };
-
-#endif // NEURAL_NETWORK_H

@@ -1,7 +1,6 @@
 /** Module to get data from a directory and convert it to a python dataset. */
 
-#ifndef DATA_LOADER_H
-#define DATA_LOADER_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -53,5 +52,3 @@ torch::Tensor meshDataToTensor(const MeshData &meshData);
 // private:
 //     std::string dataset_;
 // };
-
-#endif // DATA_LOADER_H

@@ -95,7 +95,7 @@ torch::Tensor combineTensors(const std::vector<std::pair<std::string, torch::Ten
 {
     std::vector<torch::Tensor> flattenedTensors;
 
-    for (const auto &entry : vertices)
+    for (const std::pair<std::string, torch::Tensor> &entry : vertices)
     {
         torch::Tensor flatTensor = entry.second.view(-1);
         flattenedTensors.push_back(flatTensor);
@@ -244,26 +244,21 @@ int main()
 
     loadOffFilesFromDirectory(training_directory, training_vertices);
     loadOffFilesFromDirectory(target_directory, target_vertices);
-
-    torch::Tensor trainingTensors = combineTensors(training_vertices);
-    torch::Tensor targetTensors = combineTensors(target_vertices);
-    int inputSize = training_vertices.size();
-
-    NeuralNetwork model(inputSize);
-
-    torch::Tensor transposed_training_tensor = trainingTensors.transpose(0, 1);
-    torch::Tensor transposed_target_tensor = targetTensors.transpose(0, 1);
-
-    torch::manual_seed(1);
+    // std::cout << training_vertices << std::endl;
 
     const short NOISE = 200;
+    torch::Tensor trainingTensor = combineTensors(training_vertices).transpose(0, 1) * NOISE;
+    torch::Tensor targetTensor = combineTensors(target_vertices).transpose(0, 1);
 
-    torch::Tensor TRAINING_INPUT = transposed_training_tensor * NOISE;
-    torch::Tensor TRAINING_TARGET = transposed_target_tensor.mean(1, /*keepdim=*/true);
+    int inputSize = training_vertices.size();
+    NeuralNetwork model(inputSize);
+    torch::manual_seed(1);
 
-    trainModel(model, TRAINING_INPUT, TRAINING_TARGET);
+    torch::Tensor TRAINING_TARGET = targetTensor.mean(1, true);
 
-    torch::Tensor output = model.forward(TRAINING_INPUT).detach();
+    trainModel(model, trainingTensor, TRAINING_TARGET);
+
+    torch::Tensor output = model.forward(trainingTensor).detach();
     std::string output_formatted = formatToOFF(output);
     std::string file_path = "../assets/generated_boxes/generated_box.off";
     saveOffFile(file_path, output_formatted);
@@ -276,15 +271,12 @@ int main()
     return 0;
 }
 
-// todo: change training_vertices to load with shape {1, 24} and correctly join to make trainingTensors (do it with targetTensors too)
-// todo: check whether training_vertices can be loaded as {24, 1} and trainingTensors {24, 90} to skip transposing them
 // todo: check if functions can be simplified
 // todo: make separate .cpp and .h files  to improve readability
 // todo: put .cpp in src/ and .h into include/
 // todo: use Doxygen
 // todo: check if i should do more or less error handling
 // todo compare to hazel
-// todo: update ReadMe
 // todo: delete reference/
 // todo: check line breaks
 // todo: make main.cpp the neural network definition, make a trainer file and make a cube generator file
