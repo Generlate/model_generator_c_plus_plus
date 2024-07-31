@@ -70,24 +70,21 @@ public:
     bool readOffFile(const std::string &filename, std::vector<std::pair<std::string, torch::Tensor>> &vertices)
     {
         std::ifstream file(filename);
-        if (!file.is_open())
+        if (!file)
         {
             std::cerr << "Error opening file: " << filename << '\n';
             return false;
         }
 
         std::string line;
-        std::getline(file, line);
-        if (line != "OFF")
+        if (!std::getline(file, line) || line != "OFF")
         {
             std::cerr << "Invalid OFF file: " << filename << '\n';
             return false;
         }
 
         size_t numVertices, numFaces, numEdges;
-        file >> numVertices >> numFaces >> numEdges;
-
-        if (!file.good())
+        if (!(file >> numVertices >> numFaces >> numEdges) || !file.good())
         {
             std::cerr << "Error reading metadata from file: " << filename << '\n';
             return false;
@@ -96,13 +93,11 @@ public:
         std::vector<float> vertexData(numVertices * 3);
         for (size_t i = 0; i < numVertices; ++i)
         {
-            file >> vertexData[i * 3] >> vertexData[i * 3 + 1] >> vertexData[i * 3 + 2];
-        }
-
-        if (!file.good())
-        {
-            std::cerr << "Error reading vertices from file: " << filename << '\n';
-            return false;
+            if (!(file >> vertexData[i * 3] >> vertexData[i * 3 + 1] >> vertexData[i * 3 + 2]) || !file.good())
+            {
+                std::cerr << "Error reading vertices from file: " << filename << '\n';
+                return false;
+            }
         }
 
         torch::Tensor vertexTensor = torch::from_blob(vertexData.data(), {static_cast<long>(numVertices), 3}, torch::kFloat32).clone();
@@ -179,11 +174,10 @@ public:
         size_t numVertices = 8;
         for (auto i : std::views::iota(0u, numVertices))
         {
-            auto baseIndex = i * 3;
-            float x = flattened[baseIndex].item<float>();
-            float y = flattened[baseIndex + 1].item<float>();
-            float z = flattened[baseIndex + 2].item<float>();
-            formatted_array << x << " " << y << " " << z << "\n";
+            const size_t baseIndex = i * 3;
+            formatted_array << flattened[baseIndex].item<float>() << " "
+                            << flattened[baseIndex + 1].item<float>() << " "
+                            << flattened[baseIndex + 2].item<float>() << "\n";
         }
 
         std::string vertex_section = formatted_array.str();
@@ -203,32 +197,19 @@ public:
         return vertex_section;
     }
 
-    void saveOffFile(std::string filePath, const std::string &formattedArray)
+    void saveOffFile(const std::string &originalFilePath, const std::string &formattedArray)
     {
-        std::string baseName = filePath;
-        std::string fileName, fileExtension;
-
-        auto pos = filePath.find_last_of('.');
-        if (pos != std::string::npos)
-        {
-            fileName = filePath.substr(0, pos);
-            fileExtension = filePath.substr(pos);
-        }
-        else
-        {
-            fileName = filePath;
-            fileExtension = "";
-        }
+        std::string filePath = originalFilePath;
+        std::string fileName = filePath.substr(0, filePath.find_last_of('.'));
+        std::string fileExtension = filePath.substr(filePath.find_last_of('.'));
 
         int fileCounter = 1;
         while (std::filesystem::exists(filePath))
         {
-            filePath = fileName + "_" + std::to_string(fileCounter) + fileExtension;
-            fileCounter++;
+            filePath = fileName + "_" + std::to_string(fileCounter++) + fileExtension;
         }
 
-        std::ofstream file(filePath);
-        if (file)
+        if (std::ofstream file(filePath); file)
         {
             file << formattedArray;
             std::cout << "File generated successfully. Saved as: " << filePath << '\n';
@@ -241,14 +222,14 @@ public:
 
     int run()
     {
-        std::vector<std::pair<std::string, torch::Tensor>> training_vertices2 = loadOffFilesFromDirectory(training_directory);
-        std::vector<std::pair<std::string, torch::Tensor>> target_vertices2 = loadOffFilesFromDirectory(target_directory);
+        std::vector<std::pair<std::string, torch::Tensor>> training_vector = loadOffFilesFromDirectory(training_directory);
+        std::vector<std::pair<std::string, torch::Tensor>> target_vector = loadOffFilesFromDirectory(target_directory);
 
         const short NOISE = 200;
-        torch::Tensor trainingTensor = combineTensors(training_vertices2).transpose(0, 1) * NOISE;
-        torch::Tensor targetTensor = combineTensors(target_vertices2).transpose(0, 1);
+        torch::Tensor trainingTensor = combineTensors(training_vector).transpose(0, 1) * NOISE;
+        torch::Tensor targetTensor = combineTensors(target_vector).transpose(0, 1);
 
-        int inputSize = training_vertices2.size();
+        int inputSize = training_vector.size();
         NeuralNetwork model(inputSize);
         torch::manual_seed(1);
 
@@ -276,6 +257,7 @@ int main(int argc, char **argv)
 }
 
 // todo: go through numeric types and check appropriateness
+// todo: check pointer types
 // todo: check what's assigned to a variable and what's just a function transform
 // todo: check allcaps on variables
 // todo: make separate .cpp and .h files  to improve readability
