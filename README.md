@@ -22,6 +22,6 @@ Example boxes are loaded from a directory, formatted into coordinate values, use
 
 ## Dependencies
 
--   C++
+-   C++ Standard 2023
 -   LibTorch 2.3.1
 -   CMake 3.28.3

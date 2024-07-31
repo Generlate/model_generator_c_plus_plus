@@ -10,11 +10,12 @@ include_directories(include)
 
 # Add source files
 file(GLOB SOURCES "${CMAKE_SOURCE_DIR}/src/*.cpp")
+file(GLOB HEADERS "${CMAKE_SOURCE_DIR}/include/*.h")
 
 
 
 # Create the executable
-add_executable(model_generator ${SOURCES})
+add_executable(model_generator ${SOURCES} ${HEADERS})
 
 
 # Define asset and data directories

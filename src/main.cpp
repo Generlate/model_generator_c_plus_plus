@@ -6,7 +6,7 @@
 #include <fstream>
 #include <filesystem>
 #include <ranges>
-// #include "neural_network.h"
+#include "neural_network.h"
 // #include "data_formatter.h"
 // #include "data_loader.h"
 
@@ -16,10 +16,10 @@ class CubeGenerator
 {
 public:
     static constexpr const char *VERSION = "CubeGenerator 0.0.1";
+    static constexpr const char *HELP = "help page";
 
     CubeGenerator(int argc, char **argv)
     {
-        // Parse command-line arguments
         for (int i = 1; i < argc; ++i)
         {
             if (std::string(argv[i]) == "--version")
@@ -27,44 +27,13 @@ public:
                 std::cout << VERSION << '\n';
                 exit(EXIT_SUCCESS);
             }
+            else if (std::string(argv[i]) == "--help")
+            {
+                std::cout << HELP << '\n';
+                exit(EXIT_SUCCESS);
+            }
         }
     }
-
-    struct NeuralNetwork : torch::nn::Module
-    {
-        torch::nn::Linear hidden1{nullptr}, hidden2{nullptr}, hidden3{nullptr}, output{nullptr};
-
-        NeuralNetwork(int inputSize)
-        {
-            if (inputSize <= 0)
-            {
-                throw std::invalid_argument("Error: Invalid input size.");
-            }
-            hidden1 = register_module("hidden1", torch::nn::Linear(inputSize, 8));
-            hidden2 = register_module("hidden2", torch::nn::Linear(8, 8));
-            hidden3 = register_module("hidden3", torch::nn::Linear(8, 8));
-            output = register_module("output", torch::nn::Linear(8, 1));
-        }
-
-        torch::Tensor forward(torch::Tensor x)
-        {
-            x = torch::relu(hidden1->forward(x));
-            x = torch::relu(hidden2->forward(x));
-            x = torch::relu(hidden3->forward(x));
-            x = output->forward(x);
-            return x;
-        }
-
-        void save(torch::serialize::OutputArchive &archive) const override
-        {
-            torch::nn::Module::save(archive);
-        }
-
-        void load(torch::serialize::InputArchive &archive) override
-        {
-            torch::nn::Module::load(archive);
-        }
-    };
 
     int extractNumberFromFilename(const std::string &filename)
     {
@@ -287,7 +256,6 @@ int main(int argc, char **argv)
     return app.run();
 }
 
-// todo: add app --version function and --help function
 // todo: make separate .cpp and .h files  to improve readability
 // todo: put .cpp in src/ and .h into include/
 // todo: make main.cpp the neural network definition, make a trainer file and make a cube generator file
