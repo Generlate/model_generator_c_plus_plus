@@ -60,35 +60,6 @@ public:
         }
     }
 
-    int run()
-    {
-        std::vector<std::pair<std::string, torch::Tensor>> training_vertices2 = loadOffFilesFromDirectory(training_directory);
-        std::vector<std::pair<std::string, torch::Tensor>> target_vertices2 = loadOffFilesFromDirectory(target_directory);
-
-        const short NOISE = 200;
-        torch::Tensor trainingTensor = combineTensors(training_vertices2).transpose(0, 1) * NOISE;
-        torch::Tensor targetTensor = combineTensors(target_vertices2).transpose(0, 1);
-
-        int inputSize = training_vertices2.size();
-        NeuralNetwork model(inputSize);
-        torch::manual_seed(1);
-
-        torch::Tensor TRAINING_TARGET = targetTensor.mean(1, true);
-
-        trainModel(model, trainingTensor, TRAINING_TARGET);
-
-        torch::Tensor output = model.forward(trainingTensor).detach();
-        std::string output_formatted = formatToOFF(output);
-        std::string file_path = "../assets/generated_boxes/generated_box.off";
-        saveOffFile(file_path, output_formatted);
-
-        std::shared_ptr<NeuralNetwork> net = std::make_shared<NeuralNetwork>(inputSize);
-        std::string model_save_path = "./model.pt";
-        torch::save(net, model_save_path);
-
-        return 0;
-    }
-
     std::string training_directory;
     std::string target_directory;
 
@@ -272,6 +243,35 @@ public:
             std::cerr << "Error: Could not open the file for writing." << std::endl;
         }
     }
+
+    int run()
+    {
+        std::vector<std::pair<std::string, torch::Tensor>> training_vertices2 = loadOffFilesFromDirectory(training_directory);
+        std::vector<std::pair<std::string, torch::Tensor>> target_vertices2 = loadOffFilesFromDirectory(target_directory);
+
+        const short NOISE = 200;
+        torch::Tensor trainingTensor = combineTensors(training_vertices2).transpose(0, 1) * NOISE;
+        torch::Tensor targetTensor = combineTensors(target_vertices2).transpose(0, 1);
+
+        int inputSize = training_vertices2.size();
+        NeuralNetwork model(inputSize);
+        torch::manual_seed(1);
+
+        torch::Tensor TRAINING_TARGET = targetTensor.mean(1, true);
+
+        trainModel(model, trainingTensor, TRAINING_TARGET);
+
+        torch::Tensor output = model.forward(trainingTensor).detach();
+        std::string output_formatted = formatToOFF(output);
+        std::string file_path = "../assets/generated_boxes/generated_box.off";
+        saveOffFile(file_path, output_formatted);
+
+        std::shared_ptr<NeuralNetwork> net = std::make_shared<NeuralNetwork>(inputSize);
+        std::string model_save_path = "./model.pt";
+        torch::save(net, model_save_path);
+
+        return 0;
+    }
 };
 
 int main(int argc, char **argv)
@@ -291,3 +291,4 @@ int main(int argc, char **argv)
 // todo: go through numeric types and check appropriateness
 // todo: check what's assigned to a variable and what's just a function transform
 // todo: check allcaps on variables
+// todo: add app --version function and --help function
