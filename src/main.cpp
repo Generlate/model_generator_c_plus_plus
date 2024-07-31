@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <ranges>
 // #include "neural_network.h"
 // #include "data_formatter.h"
 // #include "data_loader.h"
@@ -48,16 +49,8 @@ public:
 
     CubeGenerator(int argc, char **argv)
     {
-        if (argc > 2)
-        {
-            training_directory = argv[1];
-            target_directory = argv[2];
-        }
-        else
-        {
-            training_directory = "../assets/datasets/austens_boxes/training";
-            target_directory = "../assets/datasets/austens_boxes/target";
-        }
+        training_directory = "../assets/datasets/austens_boxes/training";
+        target_directory = "../assets/datasets/austens_boxes/target";
     }
 
     std::string training_directory;
@@ -79,7 +72,7 @@ public:
         std::ifstream file(filename);
         if (!file.is_open())
         {
-            std::cerr << "Error opening file: " << filename << std::endl;
+            std::cerr << "Error opening file: " << filename << '\n';
             return false;
         }
 
@@ -87,7 +80,7 @@ public:
         std::getline(file, line);
         if (line != "OFF")
         {
-            std::cerr << "Invalid OFF file: " << filename << std::endl;
+            std::cerr << "Invalid OFF file: " << filename << '\n';
             return false;
         }
 
@@ -96,7 +89,7 @@ public:
 
         if (!file.good())
         {
-            std::cerr << "Error reading metadata from file: " << filename << std::endl;
+            std::cerr << "Error reading metadata from file: " << filename << '\n';
             return false;
         }
 
@@ -108,7 +101,7 @@ public:
 
         if (!file.good())
         {
-            std::cerr << "Error reading vertices from file: " << filename << std::endl;
+            std::cerr << "Error reading vertices from file: " << filename << '\n';
             return false;
         }
 
@@ -138,7 +131,7 @@ public:
         {
             if (!readOffFile(filePath, vertices))
             {
-                std::cerr << "Failed to load file: " << filePath << std::endl;
+                std::cerr << "Failed to load file: " << filePath << '\n';
             }
         }
 
@@ -165,7 +158,7 @@ public:
         torch::optim::Adam optimizer(model.parameters(), torch::optim::AdamOptions(0.01));
 
         const short NUMBER_OF_EPOCHS = 2;
-        for (short EPOCH = 0; EPOCH < NUMBER_OF_EPOCHS; ++EPOCH)
+        for (short EPOCH : std::views::iota(0, NUMBER_OF_EPOCHS))
         {
             model.train();
             optimizer.zero_grad();
@@ -173,7 +166,7 @@ public:
             torch::Tensor loss = lossFunction(output, TRAINING_TARGET);
             loss.backward();
             optimizer.step();
-            std::cout << "Epoch [" << EPOCH + 1 << "/" << NUMBER_OF_EPOCHS << "], Loss: " << loss.item<float>() << std::endl;
+            std::cout << "Epoch [" << EPOCH + 1 << "/" << NUMBER_OF_EPOCHS << "], Loss: " << loss.item<float>() << '\n';
         }
     }
 
@@ -183,11 +176,13 @@ public:
         formatted_array << "OFF\n8 6 0\n";
 
         auto flattened = tensor.view({-1});
-        for (size_t i = 0; i < 8; ++i)
+        size_t numVertices = 8;
+        for (auto i : std::views::iota(0u, numVertices))
         {
-            float x = flattened[i * 3].item<float>();
-            float y = flattened[i * 3 + 1].item<float>();
-            float z = flattened[i * 3 + 2].item<float>();
+            auto baseIndex = i * 3;
+            float x = flattened[baseIndex].item<float>();
+            float y = flattened[baseIndex + 1].item<float>();
+            float z = flattened[baseIndex + 2].item<float>();
             formatted_array << x << " " << y << " " << z << "\n";
         }
 
@@ -236,11 +231,11 @@ public:
         if (file)
         {
             file << formattedArray;
-            std::cout << "File generated successfully. Saved as: " << filePath << std::endl;
+            std::cout << "File generated successfully. Saved as: " << filePath << '\n';
         }
         else
         {
-            std::cerr << "Error: Could not open the file for writing." << std::endl;
+            std::cerr << "Error: Could not open the file for writing." << '\n';
         }
     }
 
@@ -280,6 +275,9 @@ int main(int argc, char **argv)
     return app.run();
 }
 
+// todo: go through numeric types and check appropriateness
+// todo: check what's assigned to a variable and what's just a function transform
+// todo: check allcaps on variables
 // todo: make separate .cpp and .h files  to improve readability
 // todo: put .cpp in src/ and .h into include/
 // todo: use Doxygen
@@ -288,7 +286,4 @@ int main(int argc, char **argv)
 // todo compare to hazel
 // todo: delete reference/
 // todo: check line breaks
-// todo: go through numeric types and check appropriateness
-// todo: check what's assigned to a variable and what's just a function transform
-// todo: check allcaps on variables
 // todo: add app --version function and --help function
