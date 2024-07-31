@@ -15,6 +15,10 @@ namespace fs = std::filesystem;
 class CubeGenerator
 {
 public:
+    CubeGenerator(int argc, char **argv)
+    {
+    }
+
     struct NeuralNetwork : torch::nn::Module
     {
         torch::nn::Linear hidden1{nullptr}, hidden2{nullptr}, hidden3{nullptr}, output{nullptr};
@@ -46,15 +50,6 @@ public:
             torch::nn::Module::load(archive);
         }
     };
-
-    CubeGenerator(int argc, char **argv)
-    {
-        training_directory = "../assets/datasets/austens_boxes/training";
-        target_directory = "../assets/datasets/austens_boxes/target";
-    }
-
-    std::string training_directory;
-    std::string target_directory;
 
     int extractNumberFromFilename(const std::string &filename)
     {
@@ -100,7 +95,7 @@ public:
             }
         }
 
-        torch::Tensor vertexTensor = torch::from_blob(vertexData.data(), {static_cast<long>(numVertices), 3}, torch::kFloat32).clone();
+        torch::Tensor vertexTensor = torch::from_blob(vertexData.data(), {static_cast<long>(numVertices), 3}, torch::kFloat).clone();
         vertices.emplace_back(filename, std::move(vertexTensor));
 
         return true;
@@ -222,16 +217,19 @@ public:
 
     int run()
     {
+        std::string training_directory = "../assets/datasets/austens_boxes/training";
+        std::string target_directory = "../assets/datasets/austens_boxes/target";
+
         std::vector<std::pair<std::string, torch::Tensor>> training_vector = loadOffFilesFromDirectory(training_directory);
         std::vector<std::pair<std::string, torch::Tensor>> target_vector = loadOffFilesFromDirectory(target_directory);
-
-        const short NOISE = 200;
-        torch::Tensor trainingTensor = combineTensors(training_vector).transpose(0, 1) * NOISE;
-        torch::Tensor targetTensor = combineTensors(target_vector).transpose(0, 1);
 
         int inputSize = training_vector.size();
         NeuralNetwork model(inputSize);
         torch::manual_seed(1);
+
+        const short NOISE = 200;
+        torch::Tensor trainingTensor = combineTensors(training_vector).transpose(0, 1) * NOISE;
+        torch::Tensor targetTensor = combineTensors(target_vector).transpose(0, 1);
 
         torch::Tensor TRAINING_TARGET = targetTensor.mean(1, true);
 
@@ -256,9 +254,6 @@ int main(int argc, char **argv)
     return app.run();
 }
 
-// todo: go through numeric types and check appropriateness
-// todo: check pointer types
-// todo: check what's assigned to a variable and what's just a function transform
 // todo: check allcaps on variables
 // todo: make separate .cpp and .h files  to improve readability
 // todo: put .cpp in src/ and .h into include/
