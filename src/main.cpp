@@ -15,5 +15,9 @@ int main(int argc, char **argv)
     return app.run();
 }
 
-// todo: use Doxygen
-// todo compare to hazel
+// TODO: use Doxygen
+// TODO: compare to hazel
+// TODO: add a package manager (NuGet, Conan, vcpkg)
+// TODO: change to c++ standard 2020 to match google syle guide
+// TODO: convert structs to class
+// TODO: check names against google's style

@@ -13,12 +13,12 @@ class CubeGenerator
 public:
     CubeGenerator(int argc, char **argv);
 
-    int extractNumberFromFilename(const std::string &filename);
-    bool readOffFile(const std::string &filename, std::vector<std::pair<std::string, torch::Tensor>> &vertices);
-    std::vector<std::pair<std::string, torch::Tensor>> loadOffFilesFromDirectory(const std::string &directory);
-    torch::Tensor combineTensors(const std::vector<std::pair<std::string, torch::Tensor>> &vertices);
-    void trainModel(NeuralNetwork &model, torch::Tensor &TRAINING_INPUT, torch::Tensor &TRAINING_TARGET);
-    std::string formatToOFF(const torch::Tensor &tensor);
-    void saveOffFile(const std::string &originalFilePath, const std::string &formattedArray);
+    int ExtractNumberFromFilename(const std::string &filename);
+    bool ReadOffFile(const std::string &filename, std::vector<std::pair<std::string, torch::Tensor>> &vertices);
+    std::vector<std::pair<std::string, torch::Tensor>> LoadOffFilesFromDirectory(const std::string &directory);
+    torch::Tensor CombineTensors(const std::vector<std::pair<std::string, torch::Tensor>> &vertices);
+    void TrainModel(NeuralNetwork &model, torch::Tensor &TRAINING_INPUT, torch::Tensor &TRAINING_TARGET);
+    std::string FormatToOFF(const torch::Tensor &tensor);
+    void SaveOffFile(const std::string &originalFilePath, const std::string &formattedArray);
     int run();
 };

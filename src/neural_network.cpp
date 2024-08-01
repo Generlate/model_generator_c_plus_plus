@@ -2,13 +2,13 @@
 
 #include "neural_network.h"
 
-NeuralNetwork::NeuralNetwork(int inputSize)
+NeuralNetwork::NeuralNetwork(int input_size)
 {
-    if (inputSize <= 0)
+    if (input_size <= 0)
     {
         throw std::invalid_argument("Error: Invalid input size.");
     }
-    hidden1 = register_module("hidden1", torch::nn::Linear(inputSize, 8));
+    hidden1 = register_module("hidden1", torch::nn::Linear(input_size, 8));
     hidden2 = register_module("hidden2", torch::nn::Linear(8, 8));
     hidden3 = register_module("hidden3", torch::nn::Linear(8, 8));
     output = register_module("output", torch::nn::Linear(8, 1));
