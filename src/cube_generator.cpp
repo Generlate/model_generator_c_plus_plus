@@ -4,19 +4,6 @@ namespace fs = std::filesystem;
 
 CubeGenerator::CubeGenerator(int argc, char **argv)
 {
-    for (int i = 1; i < argc; ++i)
-    {
-        if (std::string(argv[i]) == "--version")
-        {
-            std::cout << VERSION << '\n';
-            exit(EXIT_SUCCESS);
-        }
-        else if (std::string(argv[i]) == "--help")
-        {
-            std::cout << HELP << '\n';
-            exit(EXIT_SUCCESS);
-        }
-    }
 }
 
 int CubeGenerator::extractNumberFromFilename(const std::string &filename)

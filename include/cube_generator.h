@@ -11,9 +11,6 @@
 class CubeGenerator
 {
 public:
-    static constexpr const char *VERSION = "CubeGenerator 0.0.1";
-    static constexpr const char *HELP = "help page";
-
     CubeGenerator(int argc, char **argv);
 
     int extractNumberFromFilename(const std::string &filename);
