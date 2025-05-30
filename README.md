@@ -1,4 +1,4 @@
-<p>
+<p align="center">
   <img width="150" src="assets/icon.png" alt="generlate logo">
 </p>
 
