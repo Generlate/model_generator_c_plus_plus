@@ -1,5 +1,4 @@
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/Generlate/model_generator_c_plus_plus) <br>
-test
 
 <p>
   <img width="150" src="assets/icon.png" alt="generlate logo">
