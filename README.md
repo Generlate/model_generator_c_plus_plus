@@ -1,9 +1,8 @@
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/Generlate/model_generator_c_plus_plus) <br>
-
 <p>
   <img width="150" src="assets/icon.png" alt="generlate logo">
 </p>
 
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/Generlate/model_generator_c_plus_plus) <br>
 This is a c++ refactor of [https://github.com/Generlate/model_generator](https://github.com/Generlate/model_generator).
 
 ![Group 1](https://github.com/Generlate/model_generator/assets/85384584/f0b014db-4579-4f15-97f4-4950ee23289b)
