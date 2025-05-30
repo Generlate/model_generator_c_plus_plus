@@ -2,7 +2,7 @@
   <img width="150" src="assets/icon.png" alt="generlate logo">
 </p>
 
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/Generlate/model_generator_c_plus_plus) ![Discord](https://img.shields.io/discord/CHANNEL_ID.svg)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/Generlate/model_generator_c_plus_plus) ![Discord](https://img.shields.io/discord/879249342177898537/879249344388280335.svg)
 <br>
 This is a c++ refactor of [https://github.com/Generlate/model_generator](https://github.com/Generlate/model_generator).
 
