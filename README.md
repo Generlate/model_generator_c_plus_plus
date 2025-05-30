@@ -1,5 +1,7 @@
-<p align="center">
-  <img width="150" src="assets/icon.png">
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/Generlate/model_generator_c_plus_plus) <br>
+
+<p>
+  <img width="150" src="assets/icon.png" alt="generlate logo">
 </p>
 
 This is a c++ refactor of [https://github.com/Generlate/model_generator](https://github.com/Generlate/model_generator).
@@ -12,7 +14,7 @@ Example boxes are loaded from a directory, formatted into coordinate values, use
 
 #### For the Model Generator
 
--   Download the repo (unzip if you you downloaded the zipped file)
+-   Download the repo (unzip if you downloaded the zipped file)
 -   navigate to model_generator/build
 -   from zsh, run `./model_generator`
 -   this should generate a box in model_generator/assets/generated_boxes/ titled "generated_box.off"
