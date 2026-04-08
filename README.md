@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="150" src="assets/icon.png" alt="generlate logo">
+  <img width="200" alt="mobile-generlate-light" src="https://github.com/user-attachments/assets/814bb0d3-0e8d-4b6a-a3f3-df6808fab766" />
 </p>
 
 This is a c++ refactor of [https://github.com/Generlate/model_generator](https://github.com/Generlate/model_generator).
