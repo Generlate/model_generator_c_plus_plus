@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="200" alt="mobile-generlate-light" src="https://github.com/user-attachments/assets/814bb0d3-0e8d-4b6a-a3f3-df6808fab766" />
+  <img width="200" alt="mobile-generlate-light" src="./assets/icon.png" />
 </p>
 
 This is a c++ refactor of [https://github.com/Generlate/model_generator](https://github.com/Generlate/model_generator).
@@ -12,16 +12,16 @@ Example boxes are loaded from a directory, formatted into coordinate values, use
 
 #### For the Model Generator
 
--   Download the repo (unzip if you downloaded the zipped file)
--   navigate to model_generator/build
--   from zsh, run `./model_generator`
--   this should generate a box in model_generator/assets/generated_boxes/ titled "generated_box.off"
--   this box can be viewed on websites like https://3dviewer.net/
+- Download the repo (unzip if you downloaded the zipped file)
+- navigate to model_generator/build
+- from zsh, run `./model_generator`
+- this should generate a box in model_generator/assets/generated_boxes/ titled "generated_box.off"
+- this box can be viewed on websites like https://3dviewer.net/
 
--   in model_generator/datasets/austens_boxes/ you can find the training and testing datasets. These are filled with boxes, generated from a simpler, box generating algorithm.
+- in model_generator/datasets/austens_boxes/ you can find the training and testing datasets. These are filled with boxes, generated from a simpler, box generating algorithm.
 
 ## Dependencies
 
--   C++ Standard 2023
--   LibTorch 2.3.1
--   CMake 3.28.3
+- C++ Standard 2023
+- LibTorch 2.3.1
+- CMake 3.28.3
